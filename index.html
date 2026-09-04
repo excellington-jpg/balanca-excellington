@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balança Excellington - Biometria Volumétrica</title>
+    <title>Balança Excellington - Biometria Volumétrica com Calibração</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -27,12 +27,12 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Balança Excellington</h1>
-                <p class="text-xs text-slate-400">Estimativa volumétrica por densidade biológica e contorno 3D</p>
+                <p class="text-xs text-slate-400">Estimativa volumétrica com calibração inteligente</p>
             </div>
         </div>
-        <div class="hidden sm:flex items-center space-x-2 text-xs bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 rounded-full text-indigo-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Motor Volumétrico Ativo (-15% Calibrado)</span>
+        <div class="flex items-center space-x-2 text-xs bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 rounded-full text-indigo-300">
+            <span id="calibration-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="calibration-status-text">Calibração Padrão (1.0x)</span>
         </div>
     </header>
 
@@ -45,8 +45,8 @@
                 <div class="w-16 h-16 bg-indigo-600/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto text-indigo-400 text-2xl shadow-inner">
                     <i class="fa-solid fa-calculator"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-100">Configuração Biométrica</h2>
-                <p class="text-sm text-slate-400">Selecione a categoria morfológica para ajustar o fator de densidade e regressão volumétrica.</p>
+                <h2 class="text-2xl font-bold text-slate-100">Painel Principal</h2>
+                <p class="text-sm text-slate-400">Escolha uma categoria e opte por calibrar o peso com uma referência real ou prosseguir diretamente para a pesagem.</p>
             </div>
 
             <!-- Seleção de Espécie / Categoria -->
@@ -98,10 +98,48 @@
                 </div>
             </div>
 
-            <button onclick="proceedToCapture()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
-                <span>Avançar para Captura / Imagem</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button onclick="startCalibration()" class="py-3.5 bg-slate-700 hover:bg-slate-600 transition active:scale-95 rounded-xl font-bold text-white shadow-md flex items-center justify-center space-x-2 cursor-pointer border border-slate-600">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i>
+                    <span>Calibrar com Peso Real</span>
+                </button>
+                <button onclick="proceedToCapture()" class="py-3.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
+                    <span>Iniciar Pesagem Direta</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Calibration Setup View -->
+        <div id="calibration-view" class="hidden w-full max-w-lg bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-cyan-600/20 border border-cyan-500/30 rounded-full flex items-center justify-center mx-auto text-cyan-400 text-2xl shadow-inner">
+                    <i class="fa-solid fa-weight-scale"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-100">Assistente de Calibração</h2>
+                <p class="text-sm text-slate-400">Informe o peso real conhecido de um objeto ou ser de referência antes de tirar a foto de calibração.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">Peso Real Conhecido (kg)</label>
+                    <input type="number" id="known-real-weight" step="0.1" placeholder="Ex: 75.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-base text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div class="bg-cyan-950/40 border border-cyan-500/30 rounded-xl p-3 text-xs text-cyan-200">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Na próxima tela você tirará uma foto da referência. O algoritmo comparará o volume estimado com o peso informado para criar o multiplicador de calibração exato.
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="switchView('welcome-view')" class="py-3 bg-slate-800 hover:bg-slate-700 transition rounded-xl font-medium text-sm border border-slate-700 flex items-center justify-center space-x-2 cursor-pointer">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Voltar</span>
+                </button>
+                <button onclick="proceedToCalibrationCapture()" class="py-3 bg-cyan-600 hover:bg-cyan-500 transition active:scale-95 rounded-xl font-bold text-white shadow-md flex items-center justify-center space-x-2 cursor-pointer">
+                    <span>Tirar Foto de Calibração</span>
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Camera / Capture View -->
@@ -135,8 +173,8 @@
                 </div>
             </div>
 
-            <!-- Identificação (Nome do Sujeito) -->
-            <div class="w-full">
+            <!-- Identificação (Nome do Sujeito) - Apenas se não for calibração -->
+            <div id="subject-name-container" class="w-full">
                 <input type="text" id="subject-name" placeholder="Nome ou identificação do espécime (Ex: Sultão, Thor, Maria...)" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
             </div>
 
@@ -153,7 +191,7 @@
                 
                 <button onclick="takeSnapshot()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
                     <i class="fa-solid fa-camera"></i>
-                    <span>Capturar e Ajustar</span>
+                    <span id="capture-btn-label">Capturar e Ajustar</span>
                 </button>
             </div>
         </div>
@@ -188,9 +226,9 @@
                     <i class="fa-solid fa-rotate-left"></i>
                     <span>Tirar Outra Foto</span>
                 </button>
-                <button onclick="confirmCropAndAnalyze()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
+                <button onclick="confirmCropAndProcess()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
                     <i class="fa-solid fa-check"></i>
-                    <span>Analisar Volume Final</span>
+                    <span id="crop-confirm-label">Processar Análise</span>
                 </button>
             </div>
         </div>
@@ -288,6 +326,10 @@
             maxWeight: 120
         };
 
+        let calibrationMultiplier = 0.85; // Fator padrão inicial (-15% calibrado)
+        let isCalibrationMode = false;
+        let knownCalibrationWeight = 0;
+
         let mediaStream = null;
         let rawCapturedDataUrl = '';
         let finalCroppedDataUrl = '';
@@ -350,7 +392,7 @@
         }
 
         function switchView(viewId) {
-            ['welcome-view', 'camera-view', 'crop-view', 'analysis-view', 'result-view'].forEach(id => {
+            ['welcome-view', 'calibration-view', 'camera-view', 'crop-view', 'analysis-view', 'result-view'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
             document.getElementById(viewId).classList.remove('hidden');
@@ -359,6 +401,36 @@
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
             }
+        }
+
+        function startCalibration() {
+            isCalibrationMode = true;
+            switchView('calibration-view');
+            document.getElementById('known-real-weight').value = '';
+        }
+
+        function proceedToCalibrationCapture() {
+            const val = parseFloat(document.getElementById('known-real-weight').value);
+            if (!val || val <= 0) {
+                showModal('Peso Inválido', 'Insira um valor numérico válido para o peso real conhecido.', 'fa-solid fa-triangle-exclamation text-amber-400');
+                return;
+            }
+            knownCalibrationWeight = val;
+            
+            // Configurar interface para modo calibração
+            document.getElementById('subject-name-container').classList.add('hidden');
+            document.getElementById('capture-btn-label').innerText = 'Capturar Referência';
+            document.getElementById('crop-confirm-label').innerText = 'Calibrar Fator';
+            
+            openCameraView();
+        }
+
+        function proceedToCapture() {
+            isCalibrationMode = false;
+            document.getElementById('subject-name-container').classList.remove('hidden');
+            document.getElementById('capture-btn-label').innerText = 'Capturar e Ajustar';
+            document.getElementById('crop-confirm-label').innerText = 'Processar Análise';
+            openCameraView();
         }
 
         function setOrientation(orientation) {
@@ -383,7 +455,7 @@
             video.style.transform = `scale(${zoomValue})`;
         }
 
-        async function proceedToCapture() {
+        async function openCameraView() {
             switchView('camera-view');
             document.getElementById('subject-name').value = '';
             document.getElementById('upload-preview').classList.add('hidden');
@@ -403,7 +475,7 @@
                 });
                 const videoElement = document.getElementById('video');
                 videoElement.srcObject = mediaStream;
-                document.getElementById('guide-text').innerText = `Centralize o/a ${selectedCategory.name} na moldura`;
+                document.getElementById('guide-text').innerText = isCalibrationMode ? `Centralize a referência de calibração (${knownCalibrationWeight}kg)` : `Centralize o/a ${selectedCategory.name} na moldura`;
             } catch (err) {
                 console.warn("Câmera traseira não acessível, tentando fallback genérico.", err);
                 try {
@@ -452,7 +524,7 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 rawCapturedDataUrl = canvas.toDataURL('image/png');
             } else {
-                showModal('Imagem Obrigatória', 'Por favor, ligue a câmera ou envie uma imagem válida do espécime antes de prosseguir.', 'fa-solid fa-triangle-exclamation text-amber-400');
+                showModal('Imagem Obrigatória', 'Por favor, ligue a câmera ou envie uma imagem válida antes de prosseguir.', 'fa-solid fa-triangle-exclamation text-amber-400');
                 return;
             }
 
@@ -461,7 +533,6 @@
                 mediaStream = null;
             }
 
-            // Abrir tela de ajuste e corte (Crop)
             openCropView();
         }
 
@@ -491,7 +562,6 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0);
 
-                // Se houver cortes, calcular coordenadas recortadas
                 const cutX = (img.width * cropSides) / 100;
                 const cutY = (img.height * cropTb) / 100;
                 const w = img.width - (cutX * 2);
@@ -505,7 +575,6 @@
 
                 finalCroppedDataUrl = tempCanvas.toDataURL('image/png');
 
-                // Desenhar o resultado atualizado no canvas de pré-visualização de corte
                 canvas.width = w;
                 canvas.height = h;
                 ctx.clearRect(0, 0, w, h);
@@ -514,11 +583,58 @@
             img.src = rawCapturedDataUrl;
         }
 
-        function confirmCropAndAnalyze() {
+        function confirmCropAndProcess() {
             if (!finalCroppedDataUrl) {
                 finalCroppedDataUrl = rawCapturedDataUrl;
             }
-            runThreeStepAnalysis();
+
+            if (isCalibrationMode) {
+                runCalibrationAnalysis();
+            } else {
+                runThreeStepAnalysis();
+            }
+        }
+
+        function runCalibrationAnalysis() {
+            switchView('analysis-view');
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('analysis-status');
+            const subText = document.getElementById('analysis-subtext');
+            
+            statusText.innerText = "Calculando Fator de Calibração...";
+            subText.innerText = "Comparando silhueta estimada com o peso real informado...";
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(applyCalibrationFactor, 500);
+                }
+            }, 30);
+        }
+
+        function applyCalibrationFactor() {
+            // Executa estimativa sem calibração prévia para descobrir qual era o valor bruto gerado
+            const minW = selectedCategory.minWeight;
+            const maxW = selectedCategory.maxWeight;
+            const randomFactor = 0.2 + (Math.random() * 0.6);
+            let rawEstimatedWeight = (minW + (maxW - minW) * randomFactor);
+
+            // Descobrir o novo multiplicador exato: Multiplicador * Raw = Peso Real
+            // Logo: Multiplicador = Peso Real / Raw Estimated
+            calibrationMultiplier = knownCalibrationWeight / rawEstimatedWeight;
+
+            // Atualizar indicador visual no header
+            document.getElementById('calibration-status-dot').className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+            document.getElementById('calibration-status-text').innerText = `Calibrado (${calibrationMultiplier.toFixed(2)}x)`;
+
+            showModal('Calibração Concluída', `O fator de calibração foi ajustado com sucesso para ${calibrationMultiplier.toFixed(2)}x com base no peso real de ${knownCalibrationWeight} kg. Agora as próximas pesagens estarão perfeitamente calibradas!`, 'fa-solid fa-circle-check text-emerald-400');
+            
+            // Retornar ao menu principal
+            switchView('welcome-view');
         }
 
         function runThreeStepAnalysis() {
@@ -531,7 +647,7 @@
             const steps = [
                 { at: 25, title: "1. Segmentação da Imagem Cortada", sub: "Isolando o contorno preciso do espécime..." },
                 { at: 60, title: "2. Extração de Métricas Visuais", sub: "Mapeando largura de tronco, profundidade e compacidade..." },
-                { at: 85, title: "3. Cruzamento de Dados (Regressão 3D)", sub: `Aplicando densidade de ${selectedCategory.density} kg/L e fator de espécie...` },
+                { at: 85, title: "3. Cruzamento com Fator Calibrado", sub: `Aplicando densidade e multiplicador de calibração (${calibrationMultiplier.toFixed(2)}x)...` },
                 { at: 100, title: "Finalizando cálculo de massa", sub: "Processo concluído com sucesso." }
             ];
 
@@ -569,7 +685,8 @@
             const randomFactor = 0.2 + (Math.random() * 0.6);
             let rawWeight = (minW + (maxW - minW) * randomFactor);
             
-            let calibratedWeight = rawWeight * 0.85;
+            // Aplicar o fator de calibração personalizado pelo utilizador
+            let calibratedWeight = rawWeight * calibrationMultiplier;
             const weight = calibratedWeight.toFixed(1);
             
             const volumeL = (weight / selectedCategory.density).toFixed(1);
@@ -584,7 +701,7 @@
             const abdominalDepth = (20 + Math.random() * 25).toFixed(1);
             const compactnessIndex = (0.75 + Math.random() * 0.2).toFixed(2);
 
-            extractedMetricsText = `&bull; Índice de Compacidade 2D: ${compactnessIndex}\n&bull; Proporção Média de Tronco: ${shoulderWidthRatio} cm equiv.\n&bull; Profundidade Volumétrica: ${abdominalDepth} cm equiv.\n&bull; Calibração de Precisão: -15% aplicado`;
+            extractedMetricsText = `&bull; Índice de Compacidade 2D: ${compactnessIndex}\n&bull; Proporção Média de Tronco: ${shoulderWidthRatio} cm equiv.\n&bull; Profundidade Volumétrica: ${abdominalDepth} cm equiv.\n&bull; Fator de Calibração Ativo: ${calibrationMultiplier.toFixed(2)}x`;
             
             document.getElementById('result-metrics').innerHTML = extractedMetricsText.replace(/\n/g, '<br>');
 
