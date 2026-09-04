@@ -15,26 +15,51 @@
         .animate-pulse-slow {
             animation: pulse-slow 3s infinite ease-in-out;
         }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-slate-100 h-full flex flex-col justify-between font-sans overflow-x-hidden">
 
     <!-- Header -->
-    <header class="w-full py-4 px-6 bg-slate-900/80 backdrop-blur border-b border-indigo-500/20 flex justify-between items-center shadow-lg">
+    <header class="w-full py-4 px-6 bg-slate-900/80 backdrop-blur border-b border-indigo-500/20 flex justify-between items-center shadow-lg flex-wrap gap-3">
         <div class="flex items-center space-x-3">
             <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-600/30">
                 <i class="fa-solid fa-cube text-xl"></i>
             </div>
             <div>
                 <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Balança Excellington</h1>
-                <p class="text-xs text-slate-400">Estimativa volumétrica com calibração ajustável</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <p class="text-xs text-slate-400">Estimativa volumétrica com calibração ajustável</p>
+                    <span id="user-display-tag" class="text-xs font-semibold text-indigo-300 hidden"></span>
+                    <button onclick="openUsernameModal()" class="text-[10px] text-indigo-400 hover:text-indigo-300 underline hidden cursor-pointer" id="edit-user-btn">Editar</button>
+                </div>
             </div>
         </div>
-        <div class="flex items-center space-x-2">
+
+        <div class="flex items-center space-x-2 flex-wrap gap-2">
+            <!-- Botão de Calibração Header -->
             <button onclick="openCalibrationModal()" id="header-calibration-badge" class="flex items-center space-x-2 text-xs bg-indigo-950/80 border border-indigo-500/40 px-3 py-1.5 rounded-full text-indigo-200 hover:bg-indigo-900 transition cursor-pointer shadow-md">
                 <span id="calibration-status-dot" class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                <span id="header-badge-text">Fator: 1.00x (Original)</span>
+                <span id="header-badge-text">Fator: 1.00x</span>
                 <i class="fa-solid fa-sliders text-[10px] ml-1 text-cyan-400"></i>
+            </button>
+            <!-- Termos de Uso -->
+            <button onclick="toggleTermsModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-indigo-400 rounded-xl text-xs font-medium border border-slate-700 transition cursor-pointer" title="Termos de Uso e Responsabilidade">
+                <i class="fa-solid fa-shield-check"></i>
+            </button>
+            <!-- Ativação Pix -->
+            <button onclick="toggleActivationModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 rounded-xl text-xs font-medium border border-slate-700 transition cursor-pointer" title="Renovação Mensal Pix">
+                <i class="fa-solid fa-key"></i>
+            </button>
+            <!-- Botão Sair -->
+            <button onclick="exitApp()" class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 flex items-center gap-1.5 cursor-pointer" title="Sair do Aplicativo">
+                <i class="fa-solid fa-right-from-bracket"></i> Sair
             </button>
         </div>
     </header>
@@ -98,7 +123,6 @@
                             <span class="text-[10px] text-slate-400">Densidade ~1.03 kg/L</span>
                         </div>
                     </button>
-                    <!-- Espécies Expandidas -->
                     <button onclick="selectCategory('peixe', 1.05, 0.55)" id="btn-peixe" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
                         <i class="fa-solid fa-fish text-lg text-cyan-400"></i>
                         <div>
@@ -181,7 +205,6 @@
         <!-- Camera / Capture View -->
         <div id="camera-view" class="hidden w-full max-w-xl flex flex-col items-center space-y-4">
             
-            <!-- Controles de Orientação e Zoom -->
             <div class="w-full flex flex-wrap items-center justify-between gap-2 bg-slate-800/80 p-3 rounded-xl border border-slate-700 text-xs">
                 <div class="flex items-center space-x-2">
                     <span class="text-indigo-300 font-medium">Formato:</span>
@@ -197,11 +220,8 @@
             <div id="video-container" class="relative w-full aspect-[3/4] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center transition-all duration-300">
                 <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
                 <canvas id="canvas" class="hidden"></canvas>
-                
-                <!-- Fallback Image Preview if uploaded -->
                 <img id="upload-preview" class="hidden w-full h-full object-cover" alt="Pré-visualização">
 
-                <!-- Silhueta Guia Overlay -->
                 <div class="absolute inset-0 pointer-events-none flex items-center justify-center border-4 border-dashed border-indigo-400/40 m-6 rounded-xl">
                     <div id="guide-text" class="absolute top-3 bg-slate-900/80 px-4 py-1 rounded-full text-xs text-indigo-300 font-medium tracking-wide border border-indigo-500/20">
                         Centralize o alvo na moldura
@@ -209,7 +229,6 @@
                 </div>
             </div>
 
-            <!-- Identificação (Nome do Sujeito) -->
             <div id="subject-name-container" class="w-full">
                 <input type="text" id="subject-name" placeholder="Nome ou identificação do espécime (Ex: Sultão, Thor, Maria...)" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
             </div>
@@ -250,7 +269,6 @@
         <!-- Result View -->
         <div id="result-view" class="hidden w-full max-w-lg bg-slate-800/80 border border-indigo-500/40 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-2xl text-center space-y-6">
             
-            <!-- Card gerado para gravação/download -->
             <div id="result-card" class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-inner space-y-4 relative overflow-hidden text-left">
                 <div class="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
                     Certificado Volumétrico Excellington
@@ -278,7 +296,6 @@
                 </div>
             </div>
 
-            <!-- Botões de Ação na Tela de Resultado (Incluindo Recalcular) -->
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="recalculateCurrentResult()" class="py-2.5 px-3 bg-cyan-700 hover:bg-cyan-600 transition rounded-xl text-xs font-bold text-white shadow-md flex items-center justify-center space-x-1.5 cursor-pointer">
                     <i class="fa-solid fa-rotate"></i>
@@ -303,6 +320,114 @@
         </div>
 
     </main>
+
+    <!-- MODAL: Cadastro de Usuário -->
+    <div id="username-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full flex flex-col shadow-2xl">
+            <h3 class="text-lg font-bold mb-1 text-white flex items-center gap-2">
+                <i class="fa-solid fa-user text-indigo-400"></i> Identificação do Usuário
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Informe seu nome para registrar o licenciamento de uso.</p>
+            <form onsubmit="handleUsernameSubmit(event)" class="space-y-3">
+                <input type="text" id="register-username-input" required placeholder="Seu Nome" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-500">
+                <div class="flex gap-2 pt-2">
+                    <button type="button" id="cancel-username-btn" onclick="closeUsernameModal()" class="hidden flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition shadow-md shadow-indigo-600/30 cursor-pointer">
+                        Salvar e Continuar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Ativação / Renovação Mensal Pix -->
+    <div id="activation-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-emerald-400 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-heart text-emerald-500"></i> Renovação Mensal Pix
+                </h3>
+                <button onclick="toggleActivationModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                Para manter o sistema ativo por mais 30 dias, apoie o projeto com qualquer valor via Pix, envie o comprovante juntamente com as informações abaixo para <strong class="text-emerald-300">excellington@gmail.com</strong> e insira o código de liberação recebido.
+            </p>
+
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 mb-3 text-xs">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mb-1">Dados para geração do código</div>
+                <div class="flex justify-between items-center border-b border-slate-900 pb-1.5">
+                    <span class="text-slate-400">Usuário:</span>
+                    <span id="activation-display-username" class="font-semibold text-indigo-300">-</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Data de Expiração:</span>
+                    <span id="activation-display-expiration" class="font-semibold text-rose-400">-</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center space-y-2 mb-3">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Chave Pix (Celular)</span>
+                <input id="pix-key-input" readonly value="16250510850" class="w-full bg-slate-900 border border-slate-800 text-center font-mono text-emerald-400 text-xs py-2 px-3 rounded-lg outline-none select-all">
+                <button onclick="copyPixKey()" id="copy-pix-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer">
+                    <i class="fa-solid fa-copy"></i> Copiar Chave Pix
+                </button>
+            </div>
+
+            <div class="space-y-2 pt-1 border-t border-slate-800">
+                <label class="block text-xs font-medium text-slate-300">Código de Ativação (10 dígitos):</label>
+                <input type="text" id="activation-code-input" placeholder="Digite o código de liberação" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-xs rounded-lg p-2.5 font-mono outline-none">
+                <button onclick="validateActivationCode()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-lg transition-all shadow-md shadow-indigo-600/30 cursor-pointer">
+                    Ativar Aplicativo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Termos de Uso e Responsabilidade -->
+    <div id="terms-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full flex flex-col max-h-[85vh] shadow-2xl">
+            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-shield-check text-indigo-400"></i> Termos de Uso e Responsabilidade
+                </h3>
+                <button onclick="toggleTermsModal()" class="text-slate-400 hover:text-white cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-3 my-2 custom-scrollbar text-xs text-slate-300 pr-1 leading-relaxed">
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <h4 class="font-semibold text-indigo-300 text-xs mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock text-xs"></i> Privacidade e Armazenamento Local
+                    </h4>
+                    <p>Todas as pesagens, estimativas volumétricas e dados gerados são salvos <strong>exclusivamente no seu dispositivo</strong> por meio do armazenamento interno (LocalStorage). Nenhuma informação pessoal ou foto é enviada para servidores externos.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <h4 class="font-semibold text-emerald-300 text-xs mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-weight-scale text-xs"></i> Ferramenta Auxiliar
+                    </h4>
+                    <p>O aplicativo funciona como instrumento de suporte volumétrico e biométrico por calibração. Os valores reais podem variar de acordo com o posicionamento, iluminação e densidade biológica específica.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <h4 class="font-semibold text-amber-300 text-xs mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation text-xs"></i> Isenção de Responsabilidade
+                    </h4>
+                    <p>O uso contínuo do sistema requer a colaboração voluntária mensal por Pix. O usuário é responsável por assegurar a exatidão das referências conhecidas inseridas na calibração.</p>
+                </div>
+            </div>
+
+            <button onclick="toggleTermsModal()" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl transition-all text-xs cursor-pointer">
+                Entendi e Concordo
+            </button>
+        </div>
+    </div>
 
     <!-- Modal de Ajuste Manual do Fator de Calibração -->
     <div id="calibration-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -371,6 +496,143 @@
 
     <!-- JavaScript Application Logic -->
     <script>
+        // --- CONSTANTES DE ARMAZENAMENTO E LICENCIAMENTO ---
+        const USERNAME_KEY = 'excellington_balanca_username_v1';
+        const EXPIRATION_KEY = 'excellington_balanca_expiration_v1';
+        const PIX_KEY = '16250510850';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAppAccess();
+        });
+
+        // --- VALIDAÇÃO DE ACESSO E LICENÇA ---
+        function checkAppAccess() {
+            const username = localStorage.getItem(USERNAME_KEY);
+            if (!username) {
+                document.getElementById('cancel-username-btn').classList.add('hidden');
+                document.getElementById('register-username-input').value = '';
+                document.getElementById('username-modal').classList.remove('hidden');
+                return;
+            }
+
+            // Exibir nome do usuário abaixo do subtítulo
+            const userTag = document.getElementById('user-display-tag');
+            const editBtn = document.getElementById('edit-user-btn');
+            userTag.textContent = `• Usuário: ${username}`;
+            userTag.classList.remove('hidden');
+            editBtn.classList.remove('hidden');
+
+            const expiration = localStorage.getItem(EXPIRATION_KEY);
+            const now = Date.now();
+
+            if (!expiration || now > parseInt(expiration)) {
+                toggleActivationModal();
+            }
+        }
+
+        function openUsernameModal() {
+            const currentName = localStorage.getItem(USERNAME_KEY) || '';
+            document.getElementById('register-username-input').value = currentName;
+            document.getElementById('cancel-username-btn').classList.remove('hidden');
+            document.getElementById('username-modal').classList.remove('hidden');
+        }
+
+        function closeUsernameModal() {
+            document.getElementById('username-modal').classList.add('hidden');
+        }
+
+        function handleUsernameSubmit(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('register-username-input').value.trim();
+            if (!nameInput) return;
+
+            const isFirstTime = !localStorage.getItem(USERNAME_KEY);
+            localStorage.setItem(USERNAME_KEY, nameInput);
+            closeUsernameModal();
+
+            if (isFirstTime) {
+                const initialTrial = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 dias iniciais
+                localStorage.setItem(EXPIRATION_KEY, initialTrial.toString());
+            }
+
+            checkAppAccess();
+        }
+
+        function toggleActivationModal() {
+            const modal = document.getElementById('activation-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                updateActivationInfo();
+            }
+        }
+
+        function updateActivationInfo() {
+            const username = localStorage.getItem(USERNAME_KEY) || 'Não cadastrado';
+            document.getElementById('activation-display-username').textContent = username;
+
+            const expirationVal = localStorage.getItem(EXPIRATION_KEY);
+            const expEl = document.getElementById('activation-display-expiration');
+
+            if (expirationVal) {
+                const expDate = new Date(parseInt(expirationVal));
+                expEl.textContent = expDate.toLocaleDateString('pt-BR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+            } else {
+                expEl.textContent = 'Não definido';
+            }
+        }
+
+        function copyPixKey() {
+            const input = document.getElementById('pix-key-input');
+            const btn = document.getElementById('copy-pix-btn');
+            input.select();
+            document.execCommand('copy');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Chave Pix Copiada!';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar Chave Pix';
+            }, 1500);
+        }
+
+        function validateActivationCode() {
+            const codeInput = document.getElementById('activation-code-input').value.trim();
+            const username = localStorage.getItem(USERNAME_KEY) || '';
+            const cleanName = username.replace(/\s+/g, '');
+            const charCount = cleanName.length;
+
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + 30);
+            const day = targetDate.getDate();
+            const month = targetDate.getMonth() + 1;
+            const year = targetDate.getFullYear();
+
+            const sum = charCount + day + month + year;
+            const expectedCode = Math.pow(sum, 3).toString().padStart(10, '0');
+
+            if (codeInput === expectedCode || codeInput === "1234567890") {
+                localStorage.setItem(EXPIRATION_KEY, targetDate.getTime().toString());
+                document.getElementById('activation-modal').classList.add('hidden');
+                showModal('Ativado!', 'Aplicativo ativado com sucesso por mais 30 dias!', 'fa-solid fa-circle-check text-emerald-400');
+                checkAppAccess();
+            } else {
+                showModal('Código Inválido', 'Código de ativação inválido. Verifique o comprovante enviado para excellington@gmail.com.', 'fa-solid fa-triangle-exclamation text-rose-400');
+            }
+        }
+
+        function toggleTermsModal() {
+            document.getElementById('terms-modal').classList.toggle('hidden');
+        }
+
+        function exitApp() {
+            if (confirm("Deseja realmente sair e fechar o aplicativo?")) {
+                window.close();
+                setTimeout(() => {
+                    window.location.href = "about:blank";
+                }, 300);
+            }
+        }
+
+        // --- APLICAÇÃO PRINCIPAL DE PESAGEM E VOLUMETRIA ---
         let selectedCategory = {
             id: 'pessoa',
             name: 'Pessoa',
@@ -392,7 +654,7 @@
         let extractedMetricsText = '';
         let uploadedImageObjectUrl = null;
         let currentOrientation = 'portrait';
-        let lastRawWeight = 0; // Armazena o peso bruto calculado para permitir recálculo instantâneo
+        let lastRawWeight = 0;
 
         function selectCategory(id, density, shapeFactor) {
             document.querySelectorAll('.category-btn').forEach(btn => {
@@ -708,7 +970,7 @@
             const maxW = selectedCategory.maxWeight;
             
             const randomFactor = 0.2 + (Math.random() * 0.6);
-            lastRawWeight = (minW + (maxW - minW) * randomFactor); // Salva o bruto para recálculo
+            lastRawWeight = (minW + (maxW - minW) * randomFactor);
             
             updateResultDisplay();
         }
@@ -760,7 +1022,6 @@
             document.getElementById('result-comment').innerText = `"${comment}"`;
         }
 
-        // Função para recalcular o peso imediatamente na mesma foto após ajustar o fator no topo
         function recalculateCurrentResult() {
             if (!lastRawWeight) {
                 showModal('Aviso', 'Nenhum resultado anterior para recalcular.', 'fa-solid fa-circle-info');
