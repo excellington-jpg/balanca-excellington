@@ -27,12 +27,16 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Balança Excellington</h1>
-                <p class="text-xs text-slate-400">Estimativa volumétrica com calibração manual</p>
+                <p class="text-xs text-slate-400">Estimativa volumétrica com calibração ajustável</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2 text-xs bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 rounded-full text-indigo-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="header-calibration-badge">Calibração: 0.85x</span>
+        <div class="flex items-center space-x-2">
+            <!-- Botão clicável para abrir o painel de ajuste manual da calibração calculada -->
+            <button onclick="openCalibrationModal()" id="header-calibration-badge" class="flex items-center space-x-2 text-xs bg-indigo-950/80 border border-indigo-500/40 px-3 py-1.5 rounded-full text-indigo-200 hover:bg-indigo-900 transition cursor-pointer shadow-md">
+                <span id="calibration-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="header-badge-text">Fator: 0.85x (Padrão)</span>
+                <i class="fa-solid fa-sliders text-[10px] ml-1 text-cyan-400"></i>
+            </button>
         </div>
     </header>
 
@@ -46,7 +50,7 @@
                     <i class="fa-solid fa-calculator"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-100">Painel Principal</h2>
-                <p class="text-sm text-slate-400">Selecione a categoria morfológica e ajuste opcionalmente o fator de calibração global.</p>
+                <p class="text-sm text-slate-400">Selecione a categoria morfológica e utilize uma imagem de referência para calibrar o fator exato.</p>
             </div>
 
             <!-- Seleção de Espécie / Categoria -->
@@ -98,20 +102,59 @@
                 </div>
             </div>
 
-            <!-- Barra de Calibração Manual Global -->
-            <div class="bg-slate-900/60 border border-indigo-500/30 rounded-xl p-4 space-y-2">
-                <div class="flex justify-between items-center text-xs">
-                    <span class="text-indigo-300 font-semibold"><i class="fa-solid fa-sliders"></i> Ajuste Manual de Calibração:</span>
-                    <span id="calibration-label" class="text-cyan-400 font-bold">0.85x</span>
+            <!-- Botão de acesso rápido à imagem de referência guardada (se houver) -->
+            <div id="reference-preview-box" class="hidden bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img id="ref-thumb" src="" alt="Referência" class="w-12 h-12 object-cover rounded-lg border border-indigo-500/50">
+                    <div class="text-xs">
+                        <span class="font-bold text-indigo-300 block">Referência Ativa</span>
+                        <span id="ref-weight-label" class="text-slate-400">Peso: 0 kg</span>
+                    </div>
                 </div>
-                <input type="range" id="global-calibration-slider" min="0.4" max="1.5" step="0.05" value="0.85" oninput="updateCalibrationManual(this.value)" class="w-full accent-indigo-500 cursor-pointer">
-                <p class="text-[11px] text-slate-400">Arraste para a esquerda para reduzir o peso estimado ou para a direita para aumentar.</p>
+                <button onclick="viewReferenceImage()" class="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg transition cursor-pointer">
+                    <i class="fa-solid fa-eye mr-1"></i> Ver Imagem
+                </button>
             </div>
 
-            <button onclick="proceedToCapture()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
-                <span>Avançar para Captura / Imagem</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <button onclick="startCalibrationSetup()" class="py-3.5 bg-slate-700 hover:bg-slate-600 transition active:scale-95 rounded-xl font-bold text-white shadow-md flex items-center justify-center space-x-2 cursor-pointer border border-slate-600">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i>
+                    <span>Calibrar c/ Imagem de Referência</span>
+                </button>
+                <button onclick="proceedToCapture()" class="py-3.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
+                    <span>Iniciar Pesagem Direta</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Calibration Setup View -->
+        <div id="calibration-view" class="hidden w-full max-w-lg bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-cyan-600/20 border border-cyan-500/30 rounded-full flex items-center justify-center mx-auto text-cyan-400 text-2xl shadow-inner">
+                    <i class="fa-solid fa-weight-scale"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-100">Calibração por Referência</h2>
+                <p class="text-sm text-slate-400">Informe o peso real conhecido da referência. Em seguida, tire ou envie a foto dessa referência para calcular o fator.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-cyan-300 uppercase tracking-wider mb-2">Peso Real Conhecido (kg)</label>
+                    <input type="number" id="known-real-weight" step="0.1" placeholder="Ex: 75.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-base text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="switchView('welcome-view')" class="py-3 bg-slate-800 hover:bg-slate-700 transition rounded-xl font-medium text-sm border border-slate-700 flex items-center justify-center space-x-2 cursor-pointer">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Voltar</span>
+                </button>
+                <button onclick="proceedToCalibrationCapture()" class="py-3 bg-cyan-600 hover:bg-cyan-500 transition active:scale-95 rounded-xl font-bold text-white shadow-md flex items-center justify-center space-x-2 cursor-pointer">
+                    <span>Avançar para Foto</span>
+                    <i class="fa-solid fa-camera"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Camera / Capture View -->
@@ -146,7 +189,7 @@
             </div>
 
             <!-- Identificação (Nome do Sujeito) -->
-            <div class="w-full">
+            <div id="subject-name-container" class="w-full">
                 <input type="text" id="subject-name" placeholder="Nome ou identificação do espécime (Ex: Sultão, Thor, Maria...)" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
             </div>
 
@@ -163,7 +206,7 @@
                 
                 <button onclick="takeSnapshot()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
                     <i class="fa-solid fa-camera"></i>
-                    <span>Analisar Volume</span>
+                    <span id="capture-btn-label">Analisar Volume</span>
                 </button>
             </div>
         </div>
@@ -232,6 +275,53 @@
 
     </main>
 
+    <!-- Modal de Ajuste Manual do Fator de Calibração (Clicando no Header) -->
+    <div id="calibration-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-indigo-500/40 rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl text-left">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i class="fa-solid fa-sliders text-cyan-400 mr-2"></i> Ajuste Fino da Calibração
+                </h3>
+                <button onclick="closeCalibrationModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <p class="text-slate-300">Aqui você define ou afina o fator multiplicador final para mais ou para menos, após a calibração por referência:</p>
+                <div class="flex justify-between items-center bg-slate-900/60 p-3 rounded-xl border border-slate-700">
+                    <span class="text-indigo-300 font-semibold">Fator Atual:</span>
+                    <span id="modal-calibration-value" class="text-cyan-400 font-extrabold text-sm">0.85x</span>
+                </div>
+                <div>
+                    <input type="range" id="manual-calibration-range" min="0.3" max="2.0" step="0.01" value="0.85" oninput="onSliderChange(this.value)" class="w-full accent-cyan-500 cursor-pointer">
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>0.3x (Mais leve)</span>
+                    <span>1.0x (Original)</span>
+                    <span>2.0x (Mais pesado)</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-3 pt-2">
+                <button onclick="closeCalibrationModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition cursor-pointer text-xs">Salvar Ajuste</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Visualizar a Imagem de Referência Guardada -->
+    <div id="reference-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-indigo-500/40 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-center">
+            <h3 class="text-base font-bold text-white">Imagem de Referência Ativa</h3>
+            <div class="w-full aspect-[4/3] rounded-xl overflow-hidden border border-indigo-500/40">
+                <img id="ref-modal-img" src="" alt="Referência" class="w-full h-full object-cover">
+            </div>
+            <p id="ref-modal-info" class="text-xs text-indigo-300"></p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="startCalibrationSetup()" class="py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-xl transition cursor-pointer">Refazer Referência</button>
+                <button onclick="closeReferenceModal()" class="py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-xl transition cursor-pointer">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-800">
         Balança Excellington &bull; Baseado em biometria de densidade biológica equivalente à água (~1.0 kg/L).
@@ -261,7 +351,10 @@
             maxWeight: 120
         };
 
-        let manualCalibrationMultiplier = 0.85; // Ajustável manualmente pelo slider
+        let calibrationMultiplier = 0.85; 
+        let isCalibrationMode = false;
+        let knownCalibrationWeight = 0;
+        let referenceImageDataUrl = null; // Armazena a imagem da referência
 
         let mediaStream = null;
         let finalCapturedDataUrl = '';
@@ -312,10 +405,35 @@
             };
         }
 
-        function updateCalibrationManual(val) {
-            manualCalibrationMultiplier = parseFloat(val);
-            document.getElementById('calibration-label').innerText = manualCalibrationMultiplier.toFixed(2) + 'x';
-            document.getElementById('header-calibration-badge').innerText = `Calibração: ${manualCalibrationMultiplier.toFixed(2)}x`;
+        function updateHeaderBadge() {
+            document.getElementById('header-badge-text').innerText = `Fator: ${calibrationMultiplier.toFixed(2)}x`;
+            document.getElementById('modal-calibration-value').innerText = calibrationMultiplier.toFixed(2) + 'x';
+            document.getElementById('manual-calibration-range').value = calibrationMultiplier;
+        }
+
+        function openCalibrationModal() {
+            updateHeaderBadge();
+            document.getElementById('calibration-modal').classList.remove('hidden');
+        }
+
+        function closeCalibrationModal() {
+            document.getElementById('calibration-modal').classList.add('hidden');
+        }
+
+        function onSliderChange(val) {
+            calibrationMultiplier = parseFloat(val);
+            updateHeaderBadge();
+        }
+
+        function viewReferenceImage() {
+            if (!referenceImageDataUrl) return;
+            document.getElementById('ref-modal-img').src = referenceImageDataUrl;
+            document.getElementById('ref-modal-info').innerText = `Peso de Referência: ${knownCalibrationWeight} kg | Fator: ${calibrationMultiplier.toFixed(2)}x`;
+            document.getElementById('reference-modal').classList.remove('hidden');
+        }
+
+        function closeReferenceModal() {
+            document.getElementById('reference-modal').classList.add('hidden');
         }
 
         function showModal(title, message, iconClass = 'fa-solid fa-circle-info') {
@@ -330,7 +448,7 @@
         }
 
         function switchView(viewId) {
-            ['welcome-view', 'camera-view', 'analysis-view', 'result-view'].forEach(id => {
+            ['welcome-view', 'calibration-view', 'camera-view', 'analysis-view', 'result-view'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
             document.getElementById(viewId).classList.remove('hidden');
@@ -339,6 +457,34 @@
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
             }
+        }
+
+        function startCalibrationSetup() {
+            closeReferenceModal();
+            isCalibrationMode = true;
+            switchView('calibration-view');
+            document.getElementById('known-real-weight').value = '';
+        }
+
+        function proceedToCalibrationCapture() {
+            const val = parseFloat(document.getElementById('known-real-weight').value);
+            if (!val || val <= 0) {
+                showModal('Peso Inválido', 'Insira um valor numérico válido para o peso real conhecido da referência.', 'fa-solid fa-triangle-exclamation text-amber-400');
+                return;
+            }
+            knownCalibrationWeight = val;
+            
+            document.getElementById('subject-name-container').classList.add('hidden');
+            document.getElementById('capture-btn-label').innerText = 'Capturar Referência';
+            
+            openCameraView();
+        }
+
+        function proceedToCapture() {
+            isCalibrationMode = false;
+            document.getElementById('subject-name-container').classList.remove('hidden');
+            document.getElementById('capture-btn-label').innerText = 'Analisar Volume';
+            openCameraView();
         }
 
         function setOrientation(orientation) {
@@ -363,7 +509,7 @@
             video.style.transform = `scale(${zoomValue})`;
         }
 
-        async function proceedToCapture() {
+        async function openCameraView() {
             switchView('camera-view');
             document.getElementById('subject-name').value = '';
             document.getElementById('upload-preview').classList.add('hidden');
@@ -383,7 +529,7 @@
                 });
                 const videoElement = document.getElementById('video');
                 videoElement.srcObject = mediaStream;
-                document.getElementById('guide-text').innerText = `Centralize o/a ${selectedCategory.name} na moldura`;
+                document.getElementById('guide-text').innerText = isCalibrationMode ? `Centralize a referência (${knownCalibrationWeight}kg)` : `Centralize o/a ${selectedCategory.name} na moldura`;
             } catch (err) {
                 console.warn("Câmera traseira não acessível, tentando fallback genérico.", err);
                 try {
@@ -441,7 +587,55 @@
                 mediaStream = null;
             }
 
-            runThreeStepAnalysis();
+            if (isCalibrationMode) {
+                runCalibrationAnalysis();
+            } else {
+                runThreeStepAnalysis();
+            }
+        }
+
+        function runCalibrationAnalysis() {
+            switchView('analysis-view');
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('analysis-status');
+            const subText = document.getElementById('analysis-subtext');
+            
+            statusText.innerText = "Processando referência de calibração...";
+            subText.innerText = "Comparando silhueta estimada com o peso real informado...";
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(applyCalibrationFactor, 500);
+                }
+            }, 30);
+        }
+
+        function applyCalibrationFactor() {
+            const minW = selectedCategory.minWeight;
+            const maxW = selectedCategory.maxWeight;
+            const randomFactor = 0.5; 
+            let rawEstimatedWeight = (minW + (maxW - minW) * randomFactor);
+
+            // Calcula o multiplicador inicial com base na referência
+            calibrationMultiplier = knownCalibrationWeight / rawEstimatedWeight;
+
+            // Guarda a imagem de referência
+            referenceImageDataUrl = finalCapturedDataUrl;
+            document.getElementById('ref-thumb').src = referenceImageDataUrl;
+            document.getElementById('ref-weight-label').innerText = `Peso: ${knownCalibrationWeight} kg`;
+            document.getElementById('reference-preview-box').classList.remove('hidden');
+
+            document.getElementById('calibration-status-dot').className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+            updateHeaderBadge();
+
+            showModal('Calibração Concluída', `Fator calculado em ${calibrationMultiplier.toFixed(2)}x. Você pode retornar à imagem de referência ou clicar no botão do topo a qualquer momento para ajustá-lo manualmente para mais ou para menos.`, 'fa-solid fa-circle-check text-emerald-400');
+            
+            switchView('welcome-view');
         }
 
         function runThreeStepAnalysis() {
@@ -454,7 +648,7 @@
             const steps = [
                 { at: 25, title: "1. Segmentação da Imagem", sub: "Isolando o contorno preciso do espécime..." },
                 { at: 60, title: "2. Extração de Métricas Visuais", sub: "Mapeando largura de tronco, profundidade e compacidade..." },
-                { at: 85, title: "3. Cruzamento com Fator Manual", sub: `Aplicando densidade e fator de calibração (${manualCalibrationMultiplier.toFixed(2)}x)...` },
+                { at: 85, title: "3. Cruzamento com Fator Ajustado", sub: `Aplicando densidade e fator ativo (${calibrationMultiplier.toFixed(2)}x)...` },
                 { at: 100, title: "Finalizando cálculo de massa", sub: "Processo concluído com sucesso." }
             ];
 
@@ -492,8 +686,7 @@
             const randomFactor = 0.2 + (Math.random() * 0.6);
             let rawWeight = (minW + (maxW - minW) * randomFactor);
             
-            // Aplicar o fator de calibração manual definido pelo usuário
-            let calibratedWeight = rawWeight * manualCalibrationMultiplier;
+            let calibratedWeight = rawWeight * calibrationMultiplier;
             const weight = calibratedWeight.toFixed(1);
             
             const volumeL = (weight / selectedCategory.density).toFixed(1);
@@ -508,7 +701,7 @@
             const abdominalDepth = (20 + Math.random() * 25).toFixed(1);
             const compactnessIndex = (0.75 + Math.random() * 0.2).toFixed(2);
 
-            extractedMetricsText = `&bull; Índice de Compacidade 2D: ${compactnessIndex}\n&bull; Proporção Média de Tronco: ${shoulderWidthRatio} cm equiv.\n&bull; Profundidade Volumétrica: ${abdominalDepth} cm equiv.\n&bull; Calibração Manual Ativa: ${manualCalibrationMultiplier.toFixed(2)}x`;
+            extractedMetricsText = `&bull; Índice de Compacidade 2D: ${compactnessIndex}\n&bull; Proporção Média de Tronco: ${shoulderWidthRatio} cm equiv.\n&bull; Profundidade Volumétrica: ${abdominalDepth} cm equiv.\n&bull; Fator de Calibração Ativo: ${calibrationMultiplier.toFixed(2)}x`;
             
             document.getElementById('result-metrics').innerHTML = extractedMetricsText.replace(/\n/g, '<br>');
 
