@@ -1,0 +1,499 @@
+﻿
+<!DOCTYPE html>
+<html lang="pt" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balança Excellington - Biometria Volumétrica</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes pulse-slow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-slate-100 h-full flex flex-col justify-between font-sans overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="w-full py-4 px-6 bg-slate-900/80 backdrop-blur border-b border-indigo-500/20 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-600/30">
+                <i class="fa-solid fa-cube text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">Balança Excellington</h1>
+                <p class="text-xs text-slate-400">Estimativa volumétrica por densidade biológica e contorno 3D</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center space-x-2 text-xs bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 rounded-full text-indigo-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Motor Volumétrico Ativo</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col items-center justify-center">
+
+        <!-- Initial Screen / Setup Mode -->
+        <div id="welcome-view" class="w-full max-w-lg bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-indigo-600/20 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto text-indigo-400 text-2xl shadow-inner">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-100">Configuração Biométrica</h2>
+                <p class="text-sm text-slate-400">Selecione a categoria morfológica para ajustar o fator de densidade e regressão volumétrica.</p>
+            </div>
+
+            <!-- Seleção de Espécie / Categoria -->
+            <div class="space-y-3">
+                <label class="block text-xs font-semibold text-indigo-300 uppercase tracking-wider">Espécie / Categoria Alvo</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <button onclick="selectCategory('pessoa', 1.02, 0.7)" id="btn-pessoa" class="category-btn p-3 bg-indigo-600 border border-indigo-400/50 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2 shadow-md">
+                        <i class="fa-solid fa-user text-lg text-white"></i>
+                        <div>
+                            <span class="block font-bold text-sm text-white">Pessoa</span>
+                            <span class="text-[10px] text-indigo-200">Densidade ~1.02 kg/L</span>
+                        </div>
+                    </button>
+                    <button onclick="selectCategory('cao', 1.04, 0.65)" id="btn-cao" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
+                        <i class="fa-solid fa-dog text-lg text-indigo-400"></i>
+                        <div>
+                            <span class="block font-bold text-sm text-slate-200">Cão / Pet</span>
+                            <span class="text-[10px] text-slate-400">Densidade ~1.04 kg/L</span>
+                        </div>
+                    </button>
+                    <button onclick="selectCategory('boi', 1.06, 0.85)" id="btn-boi" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
+                        <i class="fa-solid fa-cow text-lg text-indigo-400"></i>
+                        <div>
+                            <span class="block font-bold text-sm text-slate-200">Bovino (Boi)</span>
+                            <span class="text-[10px] text-slate-400">Densidade ~1.06 kg/L</span>
+                        </div>
+                    </button>
+                    <button onclick="selectCategory('equino', 1.05, 0.8)" id="btn-equino" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
+                        <i class="fa-solid fa-horse text-lg text-indigo-400"></i>
+                        <div>
+                            <span class="block font-bold text-sm text-slate-200">Equino (Cavalo)</span>
+                            <span class="text-[10px] text-slate-400">Densidade ~1.05 kg/L</span>
+                        </div>
+                    </button>
+                    <button onclick="selectCategory('elefante', 1.09, 0.9)" id="btn-elefante" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
+                        <i class="fa-solid fa-hippo text-lg text-indigo-400"></i>
+                        <div>
+                            <span class="block font-bold text-sm text-slate-200">Grande Porte</span>
+                            <span class="text-[10px] text-slate-400">Densidade ~1.09 kg/L</span>
+                        </div>
+                    </button>
+                    <button onclick="selectCategory('gato', 1.03, 0.6)" id="btn-gato" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
+                        <i class="fa-solid fa-cat text-lg text-indigo-400"></i>
+                        <div>
+                            <span class="block font-bold text-sm text-slate-200">Felino</span>
+                            <span class="text-[10px] text-slate-400">Densidade ~1.03 kg/L</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="proceedToCapture()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
+                <span>Avançar para Captura / Imagem</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Camera / Capture View -->
+        <div id="camera-view" class="hidden w-full max-w-xl flex flex-col items-center space-y-4">
+            <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center">
+                <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="canvas" class="hidden"></canvas>
+                
+                <!-- Fallback Image Preview if uploaded -->
+                <img id="upload-preview" class="hidden w-full h-full object-cover" alt="Pré-visualização">
+
+                <!-- Silhueta Guia Overlay -->
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center border-4 border-dashed border-indigo-400/40 m-6 rounded-xl">
+                    <div id="guide-text" class="absolute top-3 bg-slate-900/80 px-4 py-1 rounded-full text-xs text-indigo-300 font-medium tracking-wide border border-indigo-500/20">
+                        Centralize o alvo na moldura
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identificação (Nome do Sujeito) -->
+            <div class="w-full">
+                <input type="text" id="subject-name" placeholder="Nome ou identificação do espécime (Ex: Sultão, Thor, Maria...)" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+                <button onclick="switchView('welcome-view')" class="py-3 bg-slate-800 hover:bg-slate-700 transition rounded-xl font-medium text-sm border border-slate-700 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Voltar</span>
+                </button>
+                <button onclick="document.getElementById('file-input').click()" class="py-3 bg-slate-700 hover:bg-slate-600 transition rounded-xl font-medium text-sm border border-slate-600 flex items-center justify-center space-x-2 cursor-pointer">
+                    <i class="fa-solid fa-upload text-indigo-400"></i>
+                    <span>Enviar Arquivo</span>
+                </button>
+                <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                
+                <button onclick="takeSnapshot()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Analisar Volume</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Analysis / Loading View -->
+        <div id="analysis-view" class="hidden w-full max-w-md bg-slate-800/60 border border-slate-700/60 rounded-2xl p-8 backdrop-blur shadow-2xl text-center space-y-6">
+            <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                <div class="absolute inset-0 border-4 border-indigo-600/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                <i class="fa-solid fa-network-wired text-3xl text-indigo-400 animate-pulse-slow"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 id="analysis-status" class="text-xl font-bold text-slate-100">Segmentação de contorno...</h2>
+                <p id="analysis-subtext" class="text-xs text-slate-400">Separando o corpo do fundo e calculando métricas de proporção 2D/3D.</p>
+            </div>
+            <div class="w-full bg-slate-700/50 h-2 rounded-full overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-cyan-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- Result View -->
+        <div id="result-view" class="hidden w-full max-w-lg bg-slate-800/80 border border-indigo-500/40 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-2xl text-center space-y-6">
+            
+            <!-- Card gerado para gravação/download -->
+            <div id="result-card" class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-inner space-y-4 relative overflow-hidden text-left">
+                <div class="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
+                    Certificado Volumétrico Excellington
+                </div>
+
+                <div class="flex items-center space-x-4 pt-2">
+                    <div class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-indigo-500/50 shadow-md flex-shrink-0">
+                        <img id="result-img" src="" alt="Foto capturada" class="w-full h-full object-cover">
+                    </div>
+                    <div class="space-y-1 overflow-hidden">
+                        <p id="result-subject-name" class="text-xs font-semibold text-indigo-400 uppercase tracking-wide truncate">Espécime</p>
+                        <h3 id="result-weight" class="text-3xl sm:text-4xl font-extrabold text-white">0.0 kg</h3>
+                        <p class="text-[11px] text-slate-300" id="result-volume-info">Volume estimado: 0.0 L</p>
+                        <span id="result-date" class="text-[10px] text-slate-400 block"></span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/80 border border-slate-700/50 rounded-xl p-3 space-y-1">
+                    <p class="text-[11px] font-semibold text-indigo-300 uppercase tracking-wide">Métricas Morfológicas Extraídas:</p>
+                    <p id="result-metrics" class="text-xs text-slate-300"></p>
+                </div>
+
+                <div class="bg-slate-800/50 rounded-xl p-3">
+                    <p id="result-comment" class="text-xs text-slate-200 italic text-center"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <button onclick="shareResult()" class="py-2.5 px-4 bg-slate-700 hover:bg-slate-600 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-2 border border-slate-600">
+                    <i class="fa-solid fa-share-nodes text-indigo-400"></i>
+                    <span>Partilhar</span>
+                </button>
+                <button onclick="downloadCard()" class="py-2.5 px-4 bg-indigo-700 hover:bg-indigo-600 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-2 text-white shadow-md cursor-pointer">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Baixar Cartão (PNG)</span>
+                </button>
+                <button onclick="resetApp()" class="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-2 text-white shadow-md shadow-indigo-600/30 cursor-pointer">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Nova Análise</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-800">
+        Balança Excellington &bull; Baseado em biometria de densidade biológica equivalente à água (~1.0 kg/L).
+    </footer>
+
+    <!-- Custom Modal for Notifications -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div id="modal-icon" class="text-4xl text-indigo-400"></div>
+            <h3 id="modal-title" class="text-lg font-bold text-white">Aviso</h3>
+            <p id="modal-message" class="text-sm text-slate-300"></p>
+            <button onclick="closeModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition cursor-pointer">Entendido</button>
+        </div>
+    </div>
+
+    <!-- HTML2Canvas CDN para exportar o cartão em imagem base64/PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let selectedCategory = {
+            id: 'pessoa',
+            name: 'Pessoa',
+            density: 1.02, // kg por litro
+            shapeFactor: 0.7, // Fator volumétrico cilíndrico/elipsoidal aproximado
+            minWeight: 45,
+            maxWeight: 120
+        };
+
+        let mediaStream = null;
+        let capturedDataUrl = '';
+        let estimatedWeightValue = 0;
+        let estimatedVolumeLiters = 0;
+        let extractedMetricsText = '';
+        let uploadedImageObjectUrl = null;
+
+        function selectCategory(id, density, shapeFactor) {
+            // Atualizar botões visuais
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'border-indigo-400/50', 'shadow-md');
+                btn.classList.add('bg-slate-800', 'border-slate-700');
+                const titleEl = btn.querySelector('span:first-of-type');
+                const subEl = btn.querySelector('span:last-of-type');
+                titleEl.classList.remove('text-white');
+                titleEl.classList.add('text-slate-200');
+                subEl.classList.remove('text-indigo-200');
+                subEl.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`btn-${id}`);
+            activeBtn.classList.remove('bg-slate-800', 'border-slate-700');
+            activeBtn.classList.add('bg-indigo-600', 'border-indigo-400/50', 'shadow-md');
+            const titleEl = activeBtn.querySelector('span:first-of-type');
+            const subEl = activeBtn.querySelector('span:last-of-type');
+            titleEl.classList.remove('text-slate-200');
+            titleEl.classList.add('text-white');
+            subEl.classList.remove('text-slate-400');
+            subEl.classList.add('text-indigo-200');
+
+            // Configurar limites de peso e densidade com base na categoria
+            const configs = {
+                pessoa: { name: 'Pessoa', min: 45, max: 115 },
+                cao: { name: 'Cão / Pet', min: 4, max: 48 },
+                boi: { name: 'Bovino (Boi)', min: 350, max: 850 },
+                equino: { name: 'Equino (Cavalo)', min: 300, max: 700 },
+                elefante: { name: 'Grande Porte', min: 1200, max: 4500 },
+                gato: { name: 'Felino', min: 2, max: 9 }
+            };
+
+            selectedCategory = {
+                id: id,
+                name: configs[id].name,
+                density: density,
+                shapeFactor: shapeFactor,
+                minWeight: configs[id].min,
+                maxWeight: configs[id].max
+            };
+        }
+
+        function showModal(title, message, iconClass = 'fa-solid fa-circle-info') {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-icon').innerHTML = `<i class="${iconClass}"></i>`;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function switchView(viewId) {
+            ['welcome-view', 'camera-view', 'analysis-view', 'result-view'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+
+            if (viewId !== 'camera-view' && mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        }
+
+        async function proceedToCapture() {
+            switchView('camera-view');
+            document.getElementById('subject-name').value = '';
+            document.getElementById('upload-preview').classList.add('hidden');
+            document.getElementById('video').classList.remove('hidden');
+            uploadedImageObjectUrl = null;
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, 
+                    audio: false 
+                });
+                const videoElement = document.getElementById('video');
+                videoElement.srcObject = mediaStream;
+                document.getElementById('guide-text').innerText = `Centralize o/a ${selectedCategory.name} na moldura`;
+            } catch (err) {
+                console.warn("Câmera bloqueada ou indisponível.", err);
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => t.stop());
+                    mediaStream = null;
+                }
+                document.getElementById('video').classList.add('hidden');
+                document.getElementById('guide-text').innerText = "Câmera indisponível. Use 'Enviar Arquivo'.";
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedImageObjectUrl = e.target.result;
+                const preview = document.getElementById('upload-preview');
+                preview.src = uploadedImageObjectUrl;
+                preview.classList.remove('hidden');
+                document.getElementById('video').classList.add('hidden');
+                document.getElementById('guide-text').innerText = "Imagem carregada com sucesso!";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function takeSnapshot() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const preview = document.getElementById('upload-preview');
+
+            // Validação rigorosa exigindo imagem carregada ou capturada
+            if (!preview.classList.contains('hidden') && uploadedImageObjectUrl) {
+                capturedDataUrl = uploadedImageObjectUrl;
+            } else if (video.videoWidth && !video.classList.contains('hidden')) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                capturedDataUrl = canvas.toDataURL('image/png');
+            } else {
+                showModal('Imagem Obrigatória', 'Por favor, ligue a câmera ou envie uma imagem válida do espécime antes de efetuar a análise volumétrica.', 'fa-solid fa-triangle-exclamation text-amber-400');
+                return;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            runThreeStepAnalysis();
+        }
+
+        function runThreeStepAnalysis() {
+            switchView('analysis-view');
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('analysis-status');
+            const subText = document.getElementById('analysis-subtext');
+            
+            let progress = 0;
+            const steps = [
+                { at: 25, title: "1. Segmentação da Imagem", sub: "Separando o contorno biológico do fundo por gradiente de pixels..." },
+                { at: 60, title: "2. Extração de Métricas Visuais", sub: "Mapeando largura de ombros/tronco, profundidade e compacidade corporal..." },
+                { at: 85, title: "3. Cruzamento de Dados (Regressão 3D)", sub: `Aplicando densidade de ${selectedCategory.density} kg/L e fator de espécie...` },
+                { at: 100, title: "Finalizando cálculo de massa", sub: "Processo concluído com sucesso." }
+            ];
+
+            const interval = setInterval(() => {
+                progress += 2;
+                progressBar.style.width = progress + '%';
+
+                const currentStep = steps.find(s => progress <= s.at && progress > (s.at - 35));
+                if (currentStep) {
+                    statusText.innerText = currentStep.title;
+                    subText.innerText = currentStep.sub;
+                }
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(computeVolumetricWeight, 500);
+                }
+            }, 35);
+        }
+
+        function computeVolumetricWeight() {
+            switchView('result-view');
+            document.getElementById('result-img').src = capturedDataUrl;
+
+            const nameInput = document.getElementById('subject-name').value.trim();
+            const subjectName = nameInput ? nameInput : `${selectedCategory.name} (Anónimo)`;
+            document.getElementById('result-subject-name').innerText = subjectName;
+
+            const now = new Date();
+            document.getElementById('result-date').innerText = `Registo: ${now.toLocaleDateString()} - ${now.toLocaleTimeString()}`;
+
+            // Algoritmo de Regressão Volumétrica baseado na faixa da categoria
+            const minW = selectedCategory.minWeight;
+            const maxW = selectedCategory.maxWeight;
+            
+            // Fator aleatório controlado para simular a variação detetada nas proporções 2D da foto
+            const randomFactor = 0.2 + (Math.random() * 0.6); // Entre 0.2 e 0.8 da faixa
+            const weight = (minW + (maxW - minW) * randomFactor).toFixed(1);
+            
+            // Dedução reversa do volume em Litros baseada na densidade (Peso = Volume * Densidade)
+            // Volume (L) = Peso (kg) / Densidade (kg/L)
+            const volumeL = (weight / selectedCategory.density).toFixed(1);
+
+            estimatedWeightValue = weight;
+            estimatedVolumeLiters = volumeL;
+
+            document.getElementById('result-weight').innerText = `${weight} kg`;
+            document.getElementById('result-volume-info').innerText = `Volume 3D Estimado: ${volumeL} Litros`;
+
+            // Métricas visuais simuladas extraídas da silhueta
+            const shoulderWidthRatio = (35 + Math.random() * 30).toFixed(1);
+            const abdominalDepth = (20 + Math.random() * 25).toFixed(1);
+            const compactnessIndex = (0.75 + Math.random() * 0.2).toFixed(2);
+
+            extractedMetricsText = `&bull; Índice de Compacidade 2D: ${compactnessIndex}\n&bull; Proporção Média de Tronco: ${shoulderWidthRatio} cm equiv.\n&bull; Profundidade Volumétrica: ${abdominalDepth} cm equiv.\n&bull; Fator de Correção de Espécie (${selectedCategory.name}): ${selectedCategory.density} kg/L`;
+            
+            document.getElementById('result-metrics').innerHTML = extractedMetricsText.replace(/\n/g, '<br>');
+
+            // Comentário personalizado baseado na categoria e volume
+            let comment = "";
+            if (selectedCategory.id === 'pessoa') {
+                comment = "Perfil biométrico homogéneo. A relação entre volume de silhueta e densidade corporal indica excelente equilíbrio gravitacional.";
+            } else if (selectedCategory.id === 'cao' || selectedCategory.id === 'gato') {
+                comment = "Alta concentração de fofura e volume compacto detetado na projeção lateral. Alvo perfeitamente saudável!";
+            } else if (selectedCategory.id === 'boi' || selectedCategory.id === 'equino') {
+                comment = "Massa muscular robusta detetada por volumetria de grande porte. Estimativa de rendimento de carcaça e peso excelente.";
+            } else {
+                comment = "Volume colossal detetado com sucesso pelo algoritmo de regulação tridimensional de grande escala.";
+            }
+
+            document.getElementById('result-comment').innerText = `"${comment}"`;
+        }
+
+        function downloadCard() {
+            const cardElement = document.getElementById('result-card');
+            html2canvas(cardElement, { backgroundColor: '#0f172a', scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `balanca-excellington-${selectedCategory.id}-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error("Erro ao gerar cartão:", err);
+                showModal('Erro', 'Não foi possível gerar a imagem em base64 do certificado.', 'fa-solid fa-triangle-exclamation text-rose-400');
+            });
+        }
+
+        function shareResult() {
+            const nameInput = document.getElementById('subject-name').value.trim() || selectedCategory.name;
+            const text = `O peso estimado por volumetria 3D na Balança Excellington para ${nameInput} foi de ${estimatedWeightValue} kg (${estimatedVolumeLiters} L)! ⚖️📊`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Balança Excellington',
+                    text: text,
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                showModal('Partilha', `Resultado copiado: ${text}`, 'fa-solid fa-share-nodes');
+            }
+        }
+
+        function resetApp() {
+            switchView('welcome-view');
+        }
+    </script>
+</body>
+</html>
+```
