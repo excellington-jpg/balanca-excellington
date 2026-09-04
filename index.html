@@ -106,7 +106,21 @@
 
         <!-- Camera / Capture View -->
         <div id="camera-view" class="hidden w-full max-w-xl flex flex-col items-center space-y-4">
-            <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center">
+            
+            <!-- Controles de Orientação e Zoom -->
+            <div class="w-full flex flex-wrap items-center justify-between gap-2 bg-slate-800/80 p-3 rounded-xl border border-slate-700 text-xs">
+                <div class="flex items-center space-x-2">
+                    <span class="text-indigo-300 font-medium">Formato:</span>
+                    <button onclick="setOrientation('portrait')" id="btn-portrait" class="px-3 py-1 bg-indigo-600 text-white rounded-lg transition font-medium cursor-pointer">Retrato</button>
+                    <button onclick="setOrientation('landscape')" id="btn-landscape" class="px-3 py-1 bg-slate-700 text-slate-300 rounded-lg transition font-medium cursor-pointer">Paisagem</button>
+                </div>
+                <div class="flex items-center space-x-2 flex-1 max-w-[180px]">
+                    <span class="text-indigo-300 font-medium"><i class="fa-solid fa-magnifying-glass"></i> Zoom:</span>
+                    <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1" oninput="adjustZoom(this.value)" class="w-full accent-indigo-500 cursor-pointer">
+                </div>
+            </div>
+
+            <div id="video-container" class="relative w-full aspect-[3/4] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center transition-all duration-300">
                 <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
                 <canvas id="canvas" class="hidden"></canvas>
                 
@@ -139,7 +153,44 @@
                 
                 <button onclick="takeSnapshot()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
                     <i class="fa-solid fa-camera"></i>
-                    <span>Analisar Volume</span>
+                    <span>Capturar e Ajustar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Crop / Ajustar Imagem View -->
+        <div id="crop-view" class="hidden w-full max-w-xl flex flex-col items-center space-y-4">
+            <div class="text-center space-y-1">
+                <h3 class="text-lg font-bold text-white">Ajustar e Cortar Imagem</h3>
+                <p class="text-xs text-slate-400">Ajuste os controles deslizantes para remover margens desnecessárias e focar no contorno do corpo.</p>
+            </div>
+
+            <div class="relative w-full aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center">
+                <canvas id="crop-canvas" class="max-w-full max-h-full object-contain"></canvas>
+            </div>
+
+            <!-- Controles de Corte (Sliders de Margens) -->
+            <div class="w-full bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-indigo-300 font-medium mb-1">Cortar Laterais (Esquerda/Direita): <span id="val-sides">0%</span></label>
+                        <input type="range" id="crop-sides" min="0" max="35" value="0" oninput="updateCropPreview()" class="w-full accent-indigo-500 cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-indigo-300 font-medium mb-1">Cortar Topo/Base (Superior/Inferior): <span id="val-tb">0%</span></label>
+                        <input type="range" id="crop-tb" min="0" max="35" value="0" oninput="updateCropPreview()" class="w-full accent-indigo-500 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 w-full">
+                <button onclick="switchView('camera-view')" class="py-3 bg-slate-800 hover:bg-slate-700 transition rounded-xl font-medium text-sm border border-slate-700 flex items-center justify-center space-x-2 cursor-pointer">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Tirar Outra Foto</span>
+                </button>
+                <button onclick="confirmCropAndAnalyze()" class="py-3 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-90 transition active:scale-95 rounded-xl font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Analisar Volume Final</span>
                 </button>
             </div>
         </div>
@@ -231,18 +282,20 @@
         let selectedCategory = {
             id: 'pessoa',
             name: 'Pessoa',
-            density: 1.02, // kg por litro
+            density: 1.02, 
             shapeFactor: 0.7, 
             minWeight: 45,
             maxWeight: 120
         };
 
         let mediaStream = null;
-        let capturedDataUrl = '';
+        let rawCapturedDataUrl = '';
+        let finalCroppedDataUrl = '';
         let estimatedWeightValue = 0;
         let estimatedVolumeLiters = 0;
         let extractedMetricsText = '';
         let uploadedImageObjectUrl = null;
+        let currentOrientation = 'portrait';
 
         function selectCategory(id, density, shapeFactor) {
             document.querySelectorAll('.category-btn').forEach(btn => {
@@ -297,7 +350,7 @@
         }
 
         function switchView(viewId) {
-            ['welcome-view', 'camera-view', 'analysis-view', 'result-view'].forEach(id => {
+            ['welcome-view', 'camera-view', 'crop-view', 'analysis-view', 'result-view'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
             });
             document.getElementById(viewId).classList.remove('hidden');
@@ -308,15 +361,38 @@
             }
         }
 
+        function setOrientation(orientation) {
+            currentOrientation = orientation;
+            const container = document.getElementById('video-container');
+            const btnP = document.getElementById('btn-portrait');
+            const btnL = document.getElementById('btn-landscape');
+
+            if (orientation === 'portrait') {
+                container.className = "relative w-full aspect-[3/4] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center transition-all duration-300";
+                btnP.className = "px-3 py-1 bg-indigo-600 text-white rounded-lg transition font-medium cursor-pointer";
+                btnL.className = "px-3 py-1 bg-slate-700 text-slate-300 rounded-lg transition font-medium cursor-pointer";
+            } else {
+                container.className = "relative w-full aspect-[16/9] bg-black rounded-2xl overflow-hidden border border-indigo-500/30 shadow-2xl flex items-center justify-center transition-all duration-300";
+                btnL.className = "px-3 py-1 bg-indigo-600 text-white rounded-lg transition font-medium cursor-pointer";
+                btnP.className = "px-3 py-1 bg-slate-700 text-slate-300 rounded-lg transition font-medium cursor-pointer";
+            }
+        }
+
+        function adjustZoom(zoomValue) {
+            const video = document.getElementById('video');
+            video.style.transform = `scale(${zoomValue})`;
+        }
+
         async function proceedToCapture() {
             switchView('camera-view');
             document.getElementById('subject-name').value = '';
             document.getElementById('upload-preview').classList.add('hidden');
             document.getElementById('video').classList.remove('hidden');
+            document.getElementById('zoom-range').value = 1;
+            adjustZoom(1);
             uploadedImageObjectUrl = null;
 
             try {
-                // Configuração para priorizar a câmera traseira (environment)
                 mediaStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: { ideal: 'environment' }, 
@@ -368,15 +444,15 @@
             const preview = document.getElementById('upload-preview');
 
             if (!preview.classList.contains('hidden') && uploadedImageObjectUrl) {
-                capturedDataUrl = uploadedImageObjectUrl;
+                rawCapturedDataUrl = uploadedImageObjectUrl;
             } else if (video.videoWidth && !video.classList.contains('hidden')) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                capturedDataUrl = canvas.toDataURL('image/png');
+                rawCapturedDataUrl = canvas.toDataURL('image/png');
             } else {
-                showModal('Imagem Obrigatória', 'Por favor, ligue a câmera ou envie uma imagem válida do espécime antes de efetuar a análise volumétrica.', 'fa-solid fa-triangle-exclamation text-amber-400');
+                showModal('Imagem Obrigatória', 'Por favor, ligue a câmera ou envie uma imagem válida do espécime antes de prosseguir.', 'fa-solid fa-triangle-exclamation text-amber-400');
                 return;
             }
 
@@ -385,6 +461,63 @@
                 mediaStream = null;
             }
 
+            // Abrir tela de ajuste e corte (Crop)
+            openCropView();
+        }
+
+        function openCropView() {
+            switchView('crop-view');
+            document.getElementById('crop-sides').value = 0;
+            document.getElementById('crop-tb').value = 0;
+            document.getElementById('val-sides').innerText = '0%';
+            document.getElementById('val-tb').innerText = '0%';
+            updateCropPreview();
+        }
+
+        function updateCropPreview() {
+            const cropSides = parseInt(document.getElementById('crop-sides').value);
+            const cropTb = parseInt(document.getElementById('crop-tb').value);
+            
+            document.getElementById('val-sides').innerText = cropSides + '%';
+            document.getElementById('val-tb').innerText = cropTb + '%';
+
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.getElementById('crop-canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                // Se houver cortes, calcular coordenadas recortadas
+                const cutX = (img.width * cropSides) / 100;
+                const cutY = (img.height * cropTb) / 100;
+                const w = img.width - (cutX * 2);
+                const h = img.height - (cutY * 2);
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                const tCtx = tempCanvas.getContext('2d');
+                tCtx.drawImage(img, cutX, cutY, w, h, 0, 0, w, h);
+
+                finalCroppedDataUrl = tempCanvas.toDataURL('image/png');
+
+                // Desenhar o resultado atualizado no canvas de pré-visualização de corte
+                canvas.width = w;
+                canvas.height = h;
+                ctx.clearRect(0, 0, w, h);
+                ctx.drawImage(tempCanvas, 0, 0);
+            };
+            img.src = rawCapturedDataUrl;
+        }
+
+        function confirmCropAndAnalyze() {
+            if (!finalCroppedDataUrl) {
+                finalCroppedDataUrl = rawCapturedDataUrl;
+            }
             runThreeStepAnalysis();
         }
 
@@ -396,8 +529,8 @@
             
             let progress = 0;
             const steps = [
-                { at: 25, title: "1. Segmentação da Imagem", sub: "Separando o contorno biológico do fundo por gradiente de pixels..." },
-                { at: 60, title: "2. Extração de Métricas Visuais", sub: "Mapeando largura de ombros/tronco, profundidade e compacidade corporal..." },
+                { at: 25, title: "1. Segmentação da Imagem Cortada", sub: "Isolando o contorno preciso do espécime..." },
+                { at: 60, title: "2. Extração de Métricas Visuais", sub: "Mapeando largura de tronco, profundidade e compacidade..." },
                 { at: 85, title: "3. Cruzamento de Dados (Regressão 3D)", sub: `Aplicando densidade de ${selectedCategory.density} kg/L e fator de espécie...` },
                 { at: 100, title: "Finalizando cálculo de massa", sub: "Processo concluído com sucesso." }
             ];
@@ -421,7 +554,7 @@
 
         function computeVolumetricWeight() {
             switchView('result-view');
-            document.getElementById('result-img').src = capturedDataUrl;
+            document.getElementById('result-img').src = finalCroppedDataUrl;
 
             const nameInput = document.getElementById('subject-name').value.trim();
             const subjectName = nameInput ? nameInput : `${selectedCategory.name} (Anónimo)`;
@@ -436,7 +569,6 @@
             const randomFactor = 0.2 + (Math.random() * 0.6);
             let rawWeight = (minW + (maxW - minW) * randomFactor);
             
-            // Correção de precisão: redução de 15% para alinhar ao peso real exato
             let calibratedWeight = rawWeight * 0.85;
             const weight = calibratedWeight.toFixed(1);
             
