@@ -49,7 +49,7 @@
                     <i class="fa-solid fa-calculator"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-100">Painel Principal</h2>
-                <p class="text-sm text-slate-400">Selecione a categoria morfológica expandida e utilize uma imagem de referência para calibrar o fator exato.</p>
+                <p class="text-sm text-slate-400">Selecione a categoria morfológica e utilize uma imagem de referência para calibrar o fator exato.</p>
             </div>
 
             <!-- Seleção de Espécie / Categoria (Expandida) -->
@@ -278,16 +278,24 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <button onclick="shareResult()" class="py-2.5 px-4 bg-slate-700 hover:bg-slate-600 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-2 border border-slate-600 cursor-pointer">
+            <!-- Botões de Ação na Tela de Resultado (Incluindo Recalcular) -->
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="recalculateCurrentResult()" class="py-2.5 px-3 bg-cyan-700 hover:bg-cyan-600 transition rounded-xl text-xs font-bold text-white shadow-md flex items-center justify-center space-x-1.5 cursor-pointer">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Recalcular (Novo Fator)</span>
+                </button>
+                <button onclick="shareResult()" class="py-2.5 px-3 bg-slate-700 hover:bg-slate-600 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 border border-slate-600 cursor-pointer">
                     <i class="fa-solid fa-share-nodes text-indigo-400"></i>
                     <span>Partilhar</span>
                 </button>
-                <button onclick="downloadCard()" class="py-2.5 px-4 bg-indigo-700 hover:bg-indigo-600 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-2 text-white shadow-md cursor-pointer">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="downloadCard()" class="py-2.5 px-3 bg-indigo-700 hover:bg-indigo-600 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 text-white shadow-md cursor-pointer">
                     <i class="fa-solid fa-download"></i>
-                    <span>Baixar Cartão (PNG)</span>
+                    <span>Baixar (PNG)</span>
                 </button>
-                <button onclick="resetApp()" class="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-2 text-white shadow-md shadow-indigo-600/30 cursor-pointer">
+                <button onclick="resetApp()" class="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 transition rounded-xl text-xs font-medium flex items-center justify-center space-x-1.5 text-white shadow-md shadow-indigo-600/30 cursor-pointer">
                     <i class="fa-solid fa-rotate-right"></i>
                     <span>Nova Análise</span>
                 </button>
@@ -372,7 +380,7 @@
             maxWeight: 120
         };
 
-        let calibrationMultiplier = 1.00; // Padrão ajustado para 1.0x (Original)
+        let calibrationMultiplier = 1.00; 
         let isCalibrationMode = false;
         let knownCalibrationWeight = 0;
         let referenceImageDataUrl = null; 
@@ -384,6 +392,7 @@
         let extractedMetricsText = '';
         let uploadedImageObjectUrl = null;
         let currentOrientation = 'portrait';
+        let lastRawWeight = 0; // Armazena o peso bruto calculado para permitir recálculo instantâneo
 
         function selectCategory(id, density, shapeFactor) {
             document.querySelectorAll('.category-btn').forEach(btn => {
@@ -695,6 +704,16 @@
             switchView('result-view');
             document.getElementById('result-img').src = finalCapturedDataUrl;
 
+            const minW = selectedCategory.minWeight;
+            const maxW = selectedCategory.maxWeight;
+            
+            const randomFactor = 0.2 + (Math.random() * 0.6);
+            lastRawWeight = (minW + (maxW - minW) * randomFactor); // Salva o bruto para recálculo
+            
+            updateResultDisplay();
+        }
+
+        function updateResultDisplay() {
             const nameInput = document.getElementById('subject-name').value.trim();
             const subjectName = nameInput ? nameInput : `${selectedCategory.name} (Anónimo)`;
             document.getElementById('result-subject-name').innerText = subjectName;
@@ -702,13 +721,7 @@
             const now = new Date();
             document.getElementById('result-date').innerText = `Registo: ${now.toLocaleDateString()} - ${now.toLocaleTimeString()}`;
 
-            const minW = selectedCategory.minWeight;
-            const maxW = selectedCategory.maxWeight;
-            
-            const randomFactor = 0.2 + (Math.random() * 0.6);
-            let rawWeight = (minW + (maxW - minW) * randomFactor);
-            
-            let calibratedWeight = rawWeight * calibrationMultiplier;
+            let calibratedWeight = lastRawWeight * calibrationMultiplier;
             const weight = calibratedWeight.toFixed(1);
             
             const volumeL = (weight / selectedCategory.density).toFixed(1);
@@ -745,6 +758,16 @@
             }
 
             document.getElementById('result-comment').innerText = `"${comment}"`;
+        }
+
+        // Função para recalcular o peso imediatamente na mesma foto após ajustar o fator no topo
+        function recalculateCurrentResult() {
+            if (!lastRawWeight) {
+                showModal('Aviso', 'Nenhum resultado anterior para recalcular.', 'fa-solid fa-circle-info');
+                return;
+            }
+            updateResultDisplay();
+            showModal('Recalculado', `O peso foi atualizado instantaneamente utilizando o novo fator de ${calibrationMultiplier.toFixed(2)}x.`, 'fa-solid fa-circle-check text-emerald-400');
         }
 
         function downloadCard() {
