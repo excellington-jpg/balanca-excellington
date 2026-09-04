@@ -32,8 +32,8 @@
         </div>
         <div class="flex items-center space-x-2">
             <button onclick="openCalibrationModal()" id="header-calibration-badge" class="flex items-center space-x-2 text-xs bg-indigo-950/80 border border-indigo-500/40 px-3 py-1.5 rounded-full text-indigo-200 hover:bg-indigo-900 transition cursor-pointer shadow-md">
-                <span id="calibration-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                <span id="header-badge-text">Fator: 0.85x (Padrão)</span>
+                <span id="calibration-status-dot" class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                <span id="header-badge-text">Fator: 1.00x (Original)</span>
                 <i class="fa-solid fa-sliders text-[10px] ml-1 text-cyan-400"></i>
             </button>
         </div>
@@ -98,7 +98,7 @@
                             <span class="text-[10px] text-slate-400">Densidade ~1.03 kg/L</span>
                         </div>
                     </button>
-                    <!-- Novas Espécies Solicitadas -->
+                    <!-- Espécies Expandidas -->
                     <button onclick="selectCategory('peixe', 1.05, 0.55)" id="btn-peixe" class="category-btn p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition cursor-pointer flex flex-col justify-between space-y-2">
                         <i class="fa-solid fa-fish text-lg text-cyan-400"></i>
                         <div>
@@ -310,10 +310,10 @@
                 <p class="text-slate-300">Ajuste o fator multiplicador final para mais ou para menos conforme desejar:</p>
                 <div class="flex justify-between items-center bg-slate-900/60 p-3 rounded-xl border border-slate-700">
                     <span class="text-indigo-300 font-semibold">Fator Atual:</span>
-                    <span id="modal-calibration-value" class="text-cyan-400 font-extrabold text-sm">0.85x</span>
+                    <span id="modal-calibration-value" class="text-cyan-400 font-extrabold text-sm">1.00x</span>
                 </div>
                 <div>
-                    <input type="range" id="manual-calibration-range" min="0.3" max="2.0" step="0.01" value="0.85" oninput="onSliderChange(this.value)" class="w-full accent-cyan-500 cursor-pointer">
+                    <input type="range" id="manual-calibration-range" min="0.3" max="2.0" step="0.01" value="1.00" oninput="onSliderChange(this.value)" class="w-full accent-cyan-500 cursor-pointer">
                 </div>
                 <div class="flex justify-between text-[10px] text-slate-400">
                     <span>0.3x (Mais leve)</span>
@@ -372,7 +372,7 @@
             maxWeight: 120
         };
 
-        let calibrationMultiplier = 0.85; 
+        let calibrationMultiplier = 1.00; // Padrão ajustado para 1.0x (Original)
         let isCalibrationMode = false;
         let knownCalibrationWeight = 0;
         let referenceImageDataUrl = null; 
@@ -643,8 +643,8 @@
             const minW = selectedCategory.minWeight;
             const maxW = selectedCategory.maxWeight;
             const randomFactor = 0.5; 
-            let rawEstimatedWeight = (minW + (maxW - minW) * randomFactor);
 
+            let rawEstimatedWeight = (minW + (maxW - minW) * randomFactor);
             calibrationMultiplier = knownCalibrationWeight / rawEstimatedWeight;
 
             referenceImageDataUrl = finalCapturedDataUrl;
