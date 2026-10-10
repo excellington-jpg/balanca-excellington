@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt" class="h-full">
 <head>
@@ -50,14 +49,12 @@
                 <i class="fa-solid fa-sliders text-[10px] ml-1 text-cyan-400"></i>
             </button>
             <!-- Termos de Uso -->
-            
-              <button onclick="toggleTermsModal()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-indigo-300 p-2 rounded-lg border border-slate-700 transition-all" title="Termos de Uso e Responsabilidade">
-        <i data-lucide="shield-check" class="w-4 h-4"></i>
-      </button>
-            
+            <button onclick="toggleTermsModal()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-indigo-300 p-2 rounded-lg border border-slate-700 transition-all cursor-pointer" title="Termos de Uso e Responsabilidade">
+                <i class="fa-solid fa-shield-check"></i>
+            </button>
             <!-- Ativação Pix -->
-            <button onclick="toggleActivationModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 rounded-xl text-xs font-medium border border-slate-700 transition cursor-pointer" title="Renovação Mensal Pix">
-                <i class="fa-solid fa-key"></i>
+            <button onclick="openActivationModal(false)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 rounded-xl text-xs font-medium border border-slate-700 transition cursor-pointer flex items-center gap-1.5" title="Renovação Mensal Pix">
+                <i class="fa-solid fa-key"></i> Ativação
             </button>
             <!-- Botão Sair -->
             <button onclick="exitApp()" class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 flex items-center gap-1.5 cursor-pointer" title="Sair do Aplicativo">
@@ -351,7 +348,7 @@
                 <h3 class="font-bold text-emerald-400 text-base flex items-center gap-2">
                     <i class="fa-solid fa-heart text-emerald-500"></i> Renovação Mensal Pix
                 </h3>
-                <button onclick="toggleActivationModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
+                <button id="activation-close-btn" onclick="toggleActivationModal()" class="text-slate-400 hover:text-white p-1 cursor-pointer">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
@@ -381,7 +378,7 @@
             </div>
 
             <div class="space-y-2 pt-1 border-t border-slate-800">
-                <label class="block text-xs font-medium text-slate-300">Código de Ativação (10 dígitos):</label>
+                <label class="block text-xs font-medium text-slate-300">Código de Ativação (Gerado pelo Admin):</label>
                 <input type="text" id="activation-code-input" placeholder="Digite o código de liberação" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-xs rounded-lg p-2.5 font-mono outline-none">
                 <button onclick="validateActivationCode()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-lg transition-all shadow-md shadow-indigo-600/30 cursor-pointer">
                     Ativar Aplicativo
@@ -502,34 +499,52 @@
         const USERNAME_KEY = 'excellington_balanca_username_v1';
         const EXPIRATION_KEY = 'excellington_balanca_expiration_v1';
         const PIX_KEY = '16250510850';
+        let isAppForcedBlocked = false;
 
         window.addEventListener('DOMContentLoaded', () => {
             checkAppAccess();
         });
 
         // --- VALIDAÇÃO DE ACESSO E LICENÇA ---
+        function readStoredExpiration() {
+            const raw = localStorage.getItem(EXPIRATION_KEY);
+            if (raw === null || raw.trim() === '') return null;
+            const numeric = Number(raw);
+            if (Number.isFinite(numeric) && numeric > 0) {
+                return numeric < 100000000000 ? numeric * 1000 : numeric;
+            }
+            const parsed = Date.parse(raw);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
         function checkAppAccess() {
             const username = localStorage.getItem(USERNAME_KEY);
+            const usernameModal = document.getElementById('username-modal');
+
             if (!username) {
                 document.getElementById('cancel-username-btn').classList.add('hidden');
                 document.getElementById('register-username-input').value = '';
-                document.getElementById('username-modal').classList.remove('hidden');
-                return;
+                if (usernameModal) usernameModal.classList.remove('hidden');
+                return false;
             }
 
-            // Exibir nome do usuário abaixo do subtítulo
             const userTag = document.getElementById('user-display-tag');
             const editBtn = document.getElementById('edit-user-btn');
-            userTag.textContent = `• Usuário: ${username}`;
-            userTag.classList.remove('hidden');
-            editBtn.classList.remove('hidden');
+            if (userTag) {
+                userTag.textContent = `• Usuário: ${username}`;
+                userTag.classList.remove('hidden');
+            }
+            if (editBtn) editBtn.classList.remove('hidden');
 
-            const expiration = localStorage.getItem(EXPIRATION_KEY);
+            const expiration = readStoredExpiration();
             const now = Date.now();
 
-            if (!expiration || now > parseInt(expiration)) {
-                toggleActivationModal();
+            if (!expiration || now > expiration) {
+                openActivationModal(true); // Bloqueio forçado por expiração
+                return false;
             }
+
+            return true;
         }
 
         function openUsernameModal() {
@@ -552,48 +567,83 @@
             localStorage.setItem(USERNAME_KEY, nameInput);
             closeUsernameModal();
 
-            if (isFirstTime) {
-                const initialTrial = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 dias iniciais
-                localStorage.setItem(EXPIRATION_KEY, initialTrial.toString());
+            if (isFirstTime && readStoredExpiration() === null) {
+                const initialTrial = Date.now() + (30 * 24 * 60 * 60 * 1000);
+                localStorage.setItem(EXPIRATION_KEY, String(initialTrial));
             }
 
             checkAppAccess();
         }
 
-        function toggleActivationModal() {
+        function openActivationModal(forced = false) {
+            isAppForcedBlocked = forced;
             const modal = document.getElementById('activation-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                updateActivationInfo();
+            const closeBtn = document.getElementById('activation-close-btn');
+            
+            if (closeBtn) {
+                if (forced) {
+                    closeBtn.classList.add('hidden');
+                } else {
+                    closeBtn.classList.remove('hidden');
+                }
             }
+            if (modal) modal.classList.remove('hidden');
+            updateActivationInfo();
+        }
+
+        function toggleActivationModal() {
+            if (isAppForcedBlocked) return;
+            const modal = document.getElementById('activation-modal');
+            if (modal) {
+                modal.classList.toggle('hidden');
+                if (!modal.classList.contains('hidden')) {
+                    isAppForcedBlocked = false;
+                    const closeBtn = document.getElementById('activation-close-btn');
+                    if (closeBtn) closeBtn.classList.remove('hidden');
+                    updateActivationInfo();
+                }
+            }
+        }
+
+        function getRenewalTargetDate() {
+            const storedExpiration = readStoredExpiration();
+            const baseDate = (storedExpiration !== null && storedExpiration > Date.now()) 
+                ? new Date(storedExpiration) 
+                : new Date();
+
+            const targetDate = new Date(baseDate);
+            targetDate.setDate(targetDate.getDate() + 30);
+            targetDate.setHours(23, 59, 59, 999);
+            return targetDate;
         }
 
         function updateActivationInfo() {
             const username = localStorage.getItem(USERNAME_KEY) || 'Não cadastrado';
-            document.getElementById('activation-display-username').textContent = username;
+            const userEl = document.getElementById('activation-display-username');
+            if (userEl) userEl.textContent = username;
 
-            const expirationVal = localStorage.getItem(EXPIRATION_KEY);
+            const targetDate = getRenewalTargetDate();
             const expEl = document.getElementById('activation-display-expiration');
-
-            if (expirationVal) {
-                const expDate = new Date(parseInt(expirationVal));
-                expEl.textContent = expDate.toLocaleDateString('pt-BR', {
+            if (expEl) {
+                expEl.textContent = targetDate.toLocaleDateString('pt-BR', {
                     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
-            } else {
-                expEl.textContent = 'Não definido';
             }
         }
 
         function copyPixKey() {
             const input = document.getElementById('pix-key-input');
             const btn = document.getElementById('copy-pix-btn');
-            input.select();
-            document.execCommand('copy');
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> Chave Pix Copiada!';
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar Chave Pix';
-            }, 1500);
+            if (input) {
+                input.select();
+                document.execCommand('copy');
+            }
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Chave Pix Copiada!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar Chave Pix';
+                }, 1500);
+            }
         }
 
         function validateActivationCode() {
@@ -601,28 +651,39 @@
             const username = localStorage.getItem(USERNAME_KEY) || '';
             const cleanName = username.replace(/\s+/g, '');
             const charCount = cleanName.length;
+            const targetDate = getRenewalTargetDate();
 
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + 30);
             const day = targetDate.getDate();
             const month = targetDate.getMonth() + 1;
             const year = targetDate.getFullYear();
 
-            const sum = charCount + day + month + year;
-            const expectedCode = Math.pow(sum, 3).toString().padStart(10, '0');
+            const baseSum = charCount + day + month + year;
+            const expectedCode = String(Math.pow(baseSum, 3));
 
             if (codeInput === expectedCode || codeInput === "1234567890") {
                 localStorage.setItem(EXPIRATION_KEY, targetDate.getTime().toString());
+                isAppForcedBlocked = false;
                 document.getElementById('activation-modal').classList.add('hidden');
                 showModal('Ativado!', 'Aplicativo ativado com sucesso por mais 30 dias!', 'fa-solid fa-circle-check text-emerald-400');
                 checkAppAccess();
             } else {
-                showModal('Código Inválido', 'Código de ativação inválido. Verifique o comprovante enviado para excellington@gmail.com.', 'fa-solid fa-triangle-exclamation text-rose-400');
+                showModal('Código Inválido', 'Código de ativação inválido. Verifique os dados informados.', 'fa-solid fa-triangle-exclamation text-rose-400');
             }
         }
 
+        function checkAccessBeforeAction() {
+            const expiration = readStoredExpiration();
+            const now = Date.now();
+            if (!expiration || now > expiration) {
+                openActivationModal(true);
+                return false;
+            }
+            return true;
+        }
+
         function toggleTermsModal() {
-            document.getElementById('terms-modal').classList.toggle('hidden');
+            const modal = document.getElementById('terms-modal');
+            if (modal) modal.classList.toggle('hidden');
         }
 
         function exitApp() {
@@ -633,6 +694,11 @@
                 }, 300);
             }
         }
+
+        setInterval(() => checkAccessBeforeAction(), 60 * 1000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) checkAccessBeforeAction();
+        });
 
         // --- APLICAÇÃO PRINCIPAL DE PESAGEM E VOLUMETRIA ---
         let selectedCategory = {
@@ -659,6 +725,7 @@
         let lastRawWeight = 0;
 
         function selectCategory(id, density, shapeFactor) {
+            if (!checkAccessBeforeAction()) return;
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.classList.remove('bg-indigo-600', 'border-indigo-400/50', 'shadow-md');
                 btn.classList.add('bg-slate-800', 'border-slate-700');
@@ -709,6 +776,7 @@
         }
 
         function openCalibrationModal() {
+            if (!checkAccessBeforeAction()) return;
             updateHeaderBadge();
             document.getElementById('calibration-modal').classList.remove('hidden');
         }
@@ -723,6 +791,7 @@
         }
 
         function viewReferenceImage() {
+            if (!checkAccessBeforeAction()) return;
             if (!referenceImageDataUrl) return;
             document.getElementById('ref-modal-img').src = referenceImageDataUrl;
             document.getElementById('ref-modal-info').innerText = `Peso de Referência: ${knownCalibrationWeight} kg | Fator: ${calibrationMultiplier.toFixed(2)}x`;
@@ -757,6 +826,7 @@
         }
 
         function startCalibrationSetup() {
+            if (!checkAccessBeforeAction()) return;
             closeReferenceModal();
             isCalibrationMode = true;
             switchView('calibration-view');
@@ -764,6 +834,7 @@
         }
 
         function proceedToCalibrationCapture() {
+            if (!checkAccessBeforeAction()) return;
             const val = parseFloat(document.getElementById('known-real-weight').value);
             if (!val || val <= 0) {
                 showModal('Peso Inválido', 'Insira um valor numérico válido para o peso real conhecido da referência.', 'fa-solid fa-triangle-exclamation text-amber-400');
@@ -778,6 +849,7 @@
         }
 
         function proceedToCapture() {
+            if (!checkAccessBeforeAction()) return;
             isCalibrationMode = false;
             document.getElementById('subject-name-container').classList.remove('hidden');
             document.getElementById('capture-btn-label').innerText = 'Analisar Volume';
@@ -807,6 +879,7 @@
         }
 
         async function openCameraView() {
+            if (!checkAccessBeforeAction()) return;
             switchView('camera-view');
             document.getElementById('subject-name').value = '';
             document.getElementById('upload-preview').classList.add('hidden');
@@ -846,6 +919,7 @@
         }
 
         function handleFileUpload(event) {
+            if (!checkAccessBeforeAction()) return;
             const file = event.target.files[0];
             if (!file) return;
 
@@ -862,6 +936,7 @@
         }
 
         function takeSnapshot() {
+            if (!checkAccessBeforeAction()) return;
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const preview = document.getElementById('upload-preview');
@@ -1025,6 +1100,7 @@
         }
 
         function recalculateCurrentResult() {
+            if (!checkAccessBeforeAction()) return;
             if (!lastRawWeight) {
                 showModal('Aviso', 'Nenhum resultado anterior para recalcular.', 'fa-solid fa-circle-info');
                 return;
@@ -1034,6 +1110,7 @@
         }
 
         function downloadCard() {
+            if (!checkAccessBeforeAction()) return;
             const cardElement = document.getElementById('result-card');
             html2canvas(cardElement, { backgroundColor: '#0f172a', scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
@@ -1047,6 +1124,7 @@
         }
 
         function shareResult() {
+            if (!checkAccessBeforeAction()) return;
             const nameInput = document.getElementById('subject-name').value.trim() || selectedCategory.name;
             const text = `O peso estimado por volumetria 3D na Balança Excellington para ${nameInput} foi de ${estimatedWeightValue} kg (${estimatedVolumeLiters} L)! ⚖️📊`;
             if (navigator.share) {
@@ -1061,9 +1139,9 @@
         }
 
         function resetApp() {
+            if (!checkAccessBeforeAction()) return;
             switchView('welcome-view');
         }
     </script>
 </body>
 </html>
-```
